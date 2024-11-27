@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
@@ -54,6 +55,25 @@ func createTask(c *gin.Context) {
 	c.JSON(http.StatusCreated, task)
 }
 
+// Simular cURL
+func simulateCurl(c *gin.Context) {
+	task := Task{
+		Title:       "Tarefa Simulada",
+		Description: "Esta tarefa foi criada por uma simulação de cURL",
+		Priority:    "Alta",
+		Status:      "Pendente",
+	}
+
+	if err := db.Create(&task).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar a tarefa simulada"})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Tarefa criada com sucesso por meio de simulação de cURL",
+		"task":    task,
+	})
+}
+
 // Listar tarefas
 func getTasks(c *gin.Context) {
 	var tasks []Task
@@ -61,7 +81,90 @@ func getTasks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível listar as tarefas"})
 		return
 	}
-	c.JSON(http.StatusOK, tasks)
+	c.Header("Content-Type", "text/html")
+	c.String(http.StatusOK, ` 
+		<!DOCTYPE html>
+		<html lang="pt-br">
+		<head>
+			<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<title>Listar Tarefas</title>
+			<style>
+				body {
+					font-family: Arial, sans-serif;
+					background-color: #f4f4f4;
+					color: #333;
+					margin: 0;
+					padding: 0;
+				}
+				.container {
+					width: 100%;
+					max-width: 800px;
+					margin: 0 auto;
+					padding: 20px;
+					background-color: #fff;
+					box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+					border-radius: 8px;
+				}
+				h1 {
+					color: #2c3e50;
+					text-align: center;
+				}
+				table {
+					width: 100%;
+					border-collapse: collapse;
+					margin-top: 20px;
+				}
+				th, td {
+					padding: 10px;
+					text-align: left;
+					border-bottom: 1px solid #ccc;
+				}
+				th {
+					background-color: #34495e;
+					color: white;
+				}
+				footer {
+					text-align: center;
+					padding: 20px;
+					margin-top: 30px;
+					background-color: #34495e;
+					color: white;
+				}
+			</style>
+		</head>
+		<body>
+			<div class="container">
+				<h1>Lista de Tarefas</h1>
+				<table>
+					<tr>
+						<th>ID</th>
+						<th>Título</th>
+						<th>Descrição</th>
+						<th>Prioridade</th>
+						<th>Status</th>
+					</tr>`)
+	// Itera pelas tarefas e gera as linhas da tabela
+	for _, task := range tasks {
+		c.String(http.StatusOK, `
+					<tr>
+						<td>`+strconv.Itoa(int(task.ID))+`</td>
+						<td>`+task.Title+`</td>
+						<td>`+task.Description+`</td>
+						<td>`+task.Priority+`</td>
+						<td>`+task.Status+`</td>
+					</tr>
+		`)
+	}
+	c.String(http.StatusOK, ` 
+				</table>
+			</div>
+			<footer>
+				<p>&copy; 2024 API de Tarefas</p>
+			</footer>
+		</body>
+		</html>
+	`)
 }
 
 // Atualizar tarefa
@@ -106,7 +209,7 @@ func deleteTask(c *gin.Context) {
 // Rota de boas-vindas com HTML
 func welcomePage(c *gin.Context) {
 	c.Header("Content-Type", "text/html")
-	c.String(http.StatusOK, `
+	c.String(http.StatusOK, ` 
 		<!DOCTYPE html>
 		<html lang="pt-br">
 		<head>
@@ -167,6 +270,7 @@ func welcomePage(c *gin.Context) {
 					<li><strong>GET /tasks</strong> - Listar todas as tarefas</li>
 					<li><strong>PUT /tasks/:id</strong> - Atualizar uma tarefa existente</li>
 					<li><strong>DELETE /tasks/:id</strong> - Excluir uma tarefa</li>
+					<li><strong>GET /tasks/curl</strong> - Simular criação de tarefa por cURL</li>
 				</ul>
 			</div>
 			<footer>
@@ -192,6 +296,9 @@ func main() {
 	r.GET("/tasks", getTasks)
 	r.PUT("/tasks/:id", updateTask)
 	r.DELETE("/tasks/:id", deleteTask)
+
+	// Rota para simular cURL
+	r.GET("/tasks/curl", simulateCurl)
 
 	// Iniciar o servidor
 	log.Println("Servidor rodando em http://localhost:8080")
