@@ -1,5 +1,5 @@
 # GO-API-CRUD
-Projeto tópicos avançados de programação.
+Projeto de tópicos avançados de programação.
 Comandos para a execução do projeto, iserir no terminal da IDE após baixar o arquivo .GO;
 
 1- go get modernc.org/sqlite
